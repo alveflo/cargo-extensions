@@ -1,6 +1,14 @@
 use std::error::Error;
+use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use substring::Substring;
+
+#[derive(Serialize, Deserialize)]
+pub struct CrateIndexResponse {
+  pub name: String,
+  pub vers: String,
+  pub features: HashMap<String, Vec<String>>
+}
 
 fn get_crate_path(pkg: &str) -> String {
   if pkg.len() < 4 {
@@ -13,7 +21,7 @@ fn get_crate_path(pkg: &str) -> String {
   return [path1, path2, pkg].join("/");
 }
 
-pub async fn get_crate_metadata(pkg: &str) -> Result<(), Box<dyn Error>> {
+pub async fn get_crate_metadata(pkg: &str) -> Result<CrateIndexResponse, Box<dyn Error>> {
   let github_url = "https://raw.githubusercontent.com/rust-lang/crates.io-index/master/";
   let url = [github_url.to_string(), get_crate_path(pkg)].join("/");
 
@@ -25,8 +33,9 @@ pub async fn get_crate_metadata(pkg: &str) -> Result<(), Box<dyn Error>> {
   let splitted: Vec<&str> = resp.split("\n").collect();
   let latest = splitted[splitted.len() -2].to_string();
 
-  // println!(latest);
-  Ok(())
+  let parsed: CrateIndexResponse = serde_json::from_str(&latest).unwrap();
+
+  Ok(parsed)
 }
 
 #[cfg(test)]
